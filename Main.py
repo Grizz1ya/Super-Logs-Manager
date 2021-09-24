@@ -10,7 +10,7 @@ class Notify:
         if type(text) == list: text = ' '.join(str(x) for x in text)
         print(text)
 
-    def wait(self, text):
+    def wait(self):
         input('Type Enter...')
 
 class SaveManager:
@@ -100,4 +100,4 @@ if __name__ == '__main__':
     for logType in Config.LogIndicators:
         notify.do(['\t', logType, ':', Sorted.Statistic[logType]])
 
-    notydo.wait()
+    notify.wait()
