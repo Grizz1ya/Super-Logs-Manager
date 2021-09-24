@@ -10,6 +10,9 @@ class Notify:
         if type(text) == list: text = ' '.join(str(x) for x in text)
         print(text)
 
+    def wait(self, text):
+        input('Type Enter...')
+
 class SaveManager:
     def __init__(self, dataToSave):
         self.dataToSave = dataToSave
@@ -84,7 +87,7 @@ class Sort:
 
 if __name__ == '__main__':
     notify = Notify()
-    Sorted = Sort(r'')
+    Sorted = Sort(input('Type path to folder with your files: '))
 
     for log in Sorted.inputFiles:
         Sorted.grabDiscordTokens(log)
@@ -96,3 +99,5 @@ if __name__ == '__main__':
     notify.do('Log Types: ')
     for logType in Config.LogIndicators:
         notify.do(['\t', logType, ':', Sorted.Statistic[logType]])
+
+    notydo.wait()
