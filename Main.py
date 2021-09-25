@@ -20,13 +20,13 @@ class SaveManager:
         try: os.mkdir('Results')
         except: pass
 
-    def Discord(self):
-        with open(os.path.join('Results', 'Discord.txt'), 'a+') as f: f.write('\n'.join(x for x in self.dataToSave))
+    def File(self, fileName):
+        with open(os.path.join('Results', fileName + '.txt'), 'a+') as f: f.write('\n'.join(x for x in self.dataToSave))
 
-    def CryptoWallets(self):
-        for wallet in self.dataToSave:
-            for path in self.dataToSave[wallet]:
-                try: shutil.copytree(path, os.path.join(os.path.join('Results', wallet), os.path.basename(path)))
+    def Folder(self):
+        for type in self.dataToSave:
+            for path in self.dataToSave[type]:
+                try: shutil.copytree(path, os.path.join(os.path.join('Results', type), os.path.basename(path)))
                 except: pass
 
 class Collector:
@@ -51,13 +51,15 @@ class Sort:
 
         self.DiscordTokens = []
         self.CryptoWalletsFolder = {}
+        self.BuildTags = {}
+        self.Dates = {}
 
     def detectType(self, folder):
         for indicatorKey in Config.LogIndicators:
             if tuple(x in Config.LogIndicators[indicatorKey] for x in os.listdir(folder)).count(True) > Config.MinIndicatorMatches:
                 if indicatorKey not in self.Statistic: self.Statistic[indicatorKey] = 0
                 self.Statistic[indicatorKey] += 1
-                return True
+                return indicatorKey
         return False
 
     def grabDiscordTokens(self, folder, isTokens = True):
@@ -83,7 +85,25 @@ class Sort:
             else: validFolders += self.Walk(os.path.join(folder, nestedFolder))
         return validFolders
 
-    def byDate(self, folder): pass
+    def byDate(self, folder):
+        if self.detectType(folder) == 'RedLine':
+            if not os.path.exists(os.path.join(folder, 'UserInformation.txt')): return
+            with open(os.path.join(folder, 'UserInformation.txt'), errors = 'ignore') as f:
+                f.seek(850)
+                DateFile = re.search('\d+/\d+/\d+', f.read(250))[0].replace('/', '.')
+            if DateFile not in self.Dates: self.Dates[DateFile] = []
+            self.Dates[DateFile].append(folder)
+            return
+
+    def byBuildTag(self, folder):
+        if self.detectType(folder) == 'RedLine':
+            if not os.path.exists(os.path.join(folder, 'UserInformation.txt')): return
+            with open(os.path.join(folder, 'UserInformation.txt'), errors = 'ignore') as f:
+                f.seek(350)
+                BuildId = re.search('Build ID: .+', f.read(200))[0].split(': ')[-1]
+            if BuildId not in self.BuildTags: self.BuildTags[BuildId] = []
+            self.BuildTags[BuildId].append(folder)
+            return
 
 if __name__ == '__main__':
     notify = Notify()
@@ -92,12 +112,24 @@ if __name__ == '__main__':
     for log in Sorted.inputFiles:
         Sorted.grabDiscordTokens(log)
         Sorted.CryptoWallets(log)
+        Sorted.byBuildTag(log)
+        Sorted.byDate(log)
 
-    SaveManager(Sorted.CryptoWalletsFolder).CryptoWallets()
-    SaveManager(Sorted.DiscordTokens).Discord()
+
+    SaveManager(Sorted.Dates).Folder()
+    SaveManager(Sorted.BuildTags).Folder()
+    SaveManager(Sorted.CryptoWalletsFolder).Folder()
+    SaveManager(Sorted.DiscordTokens).File('Discord')
 
     notify.do('Log Types: ')
-    for logType in Config.LogIndicators:
-        notify.do(['\t', logType, ':', Sorted.Statistic[logType]])
+    for logType in Config.LogIndicators: notify.do(['\t', logType, ':', Sorted.Statistic[logType]])
+
+    notify.do('Log Dates: ')
+    for date in Sorted.Dates: notify.do(['\t', date])
+
+    notify.do(['Discord Tokens:', len(Sorted.DiscordTokens)])
+
+    notify.do('Build Tags: ')
+    for tag in Sorted.BuildTags: notify.do(['\t', tag])
 
     notify.wait()
